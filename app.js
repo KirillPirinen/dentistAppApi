@@ -3,11 +3,13 @@ const { graphqlHTTP } = require('express-graphql')
 const cors = require('cors')
 const graphqlConfig = require('./config/graphql')
 const corsConfig = require('./config/cors')
+const morgan = require('morgan')
 const { SERVER_PORT } = process.env
 
 const PORT = SERVER_PORT ?? 3000
 const app = express()
 
+app.use(morgan('combined'))
 app.use(cors(corsConfig))
 app.use('/graphql', graphqlHTTP(graphqlConfig))
 

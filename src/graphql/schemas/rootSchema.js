@@ -1,22 +1,33 @@
-const { GraphQLObjectType, GraphQLString, GraphQLID, GraphQLSchema } = require('graphql')
-const { Status, Order } = require("../../../db/models")
-const graphiqlToSequelize = require('../../helpers/parse-graphql-meta')
-const { OrderType, StatusType } = require('../types')
+const { GraphQLObjectType, GraphQLList, GraphQLID, GraphQLSchema } = require('graphql')
+const { Doctor, Patient, Appointment } = require("../../../db/models")
+const { graphiqlToSequelizeSimple, graphiqlToSequelizeNested } = require('../utils/parse-graphql-meta')
+const { DoctorType, PatientType, AppointmentType } = require('../types')
 
 const Query = new GraphQLObjectType({
   name:'Query',
   fields: {
-    status: { type: StatusType, args: { id: { type: GraphQLID } },
-      resolve(parent, args) {
-        return Status.findByPk(args.id)
-      }
-    },
-    order: {
-      type: OrderType,
+    doctor: { 
+      type: DoctorType, 
       args: { id: { type: GraphQLID } },
-      async resolve(parent, args, context, info) {
-        return await Order.findByPk(args.id, { ...graphiqlToSequelize(info.fieldNodes[0]) })
-      }
+      resolve: (parent, args, context, info) => Doctor.findByPk(args.id, { 
+        attributes: graphiqlToSequelizeSimple(info.fieldNodes[0]) })
+    },
+    patient: { 
+      type: PatientType, args: { id: { type: GraphQLID } },
+      resolve: (parent, args, context, info) => Patient.findByPk(args.id, { 
+        attributes: graphiqlToSequelizeSimple(info.fieldNodes[0]) })
+    },
+    patients: {
+      type: new GraphQLList(PatientType),
+      resolve: (parent, args, context, info) => Patient.findAll({ 
+        where: { doctor_id: 1 }, 
+        attributes: graphiqlToSequelizeSimple(info.fieldNodes[0]) })
+    },
+    appointments: {
+      type: new GraphQLList(AppointmentType),
+      resolve: (parent, args, context, info) => Appointment.findAll({ 
+        where: { doctor_id: 1 }, 
+        ...graphiqlToSequelizeNested(info.fieldNodes[0]) })
     }
   }
 })
